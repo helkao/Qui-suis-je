@@ -8,7 +8,7 @@
 :root{--bg:#14110f;--paper:#e9dfc8;--ink:#2a2118;--red:#b3261e;--muted:#a89f8c}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{height:100dvh}
+body{height:var(--app-h,100vh)}
 body{background:var(--bg);color:var(--paper);font-family:Georgia,"Times New Roman",serif;display:flex;flex-direction:column}
 header{padding:14px 16px 0;text-align:center}
 h1{margin:0;font-size:1.25rem;letter-spacing:.2em;text-transform:uppercase}
@@ -17,7 +17,7 @@ nav{display:flex;justify-content:center;gap:6px;padding:12px;flex-wrap:wrap}
 nav button{background:#241e19;color:var(--paper);border:1px solid #4a3f33;border-radius:6px 6px 0 0;padding:9px 16px;font:inherit;cursor:pointer}
 nav button[aria-selected="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
 main{flex:1;min-height:0;position:relative}
-section{display:none;position:absolute;inset:0 12px 12px;background:var(--paper);color:var(--ink);border-radius:6px;overflow:hidden}
+section{display:none;position:absolute;top:0;left:12px;right:12px;bottom:12px;background:var(--paper);color:var(--ink);border-radius:6px;overflow:hidden}
 section.on{display:block}
 .viewport{height:100%;overflow:hidden;touch-action:none;cursor:grab;background:#3b2f25 repeating-linear-gradient(45deg,#3b2f25 0 8px,#362b21 8px 16px)}
 .viewport img{transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none;position:absolute;top:0;left:0}
@@ -26,8 +26,8 @@ section.on{display:block}
 .tools button:hover,.btn:hover{background:var(--red)}
 iframe{width:100%;height:100%;border:0;background:#fff}
 .bar{position:absolute;top:10px;right:10px;z-index:2}
-.drawing{position:absolute;inset:0;padding:14px;background:#2b231c}
-.drawing img{display:block;width:100%;height:100%;object-fit:contain;cursor:zoom-in;filter:drop-shadow(0 8px 20px #000a)}
+.drawing{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:14px;background:#2b231c}
+.drawing img{display:block;max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;filter:drop-shadow(0 8px 20px #000a)}
 .missing{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:var(--ink)}
 .missing code{background:#0002;padding:2px 6px;border-radius:4px}
 #lightbox{position:fixed;inset:0;background:#000e;display:none;place-items:center;z-index:9;cursor:zoom-out}
@@ -36,7 +36,7 @@ iframe{width:100%;height:100%;border:0;background:#fff}
 </style>
 </head>
 <body>
-<header><h1><span>Classé</span>Dossier confidentiel</h1><div style="font-size:.7rem;color:var(--muted);margin-top:4px">version 3</div></header>
+<header><h1><span>Classé</span>Dossier confidentiel</h1><div style="font-size:.7rem;color:var(--muted);margin-top:4px">version 4</div></header>
 <nav role="tablist">
   <button role="tab" data-tab="tableau">Tableau d’enquête</button>
   <button role="tab" data-tab="lettre">Lettre de motivation</button>
@@ -74,6 +74,7 @@ function show(name){
   tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
   document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === name));
   if(location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  layout();
   if(name === "tableau") fit();
 }
 tabs.forEach(b => b.onclick = () => show(b.dataset.tab));
@@ -141,6 +142,20 @@ const up = e => { pts.delete(e.pointerId); lastDist = 0; vp.style.cursor = "grab
 vp.addEventListener("pointerup", up);
 vp.addEventListener("pointercancel", up);
 
+// Mise en page adaptée à tous les écrans (téléphone, tablette, ordinateur)
+function layout(){
+  document.documentElement.style.setProperty("--app-h", innerHeight + "px");
+  const box = art.parentElement;
+  if(box.clientWidth && art.naturalWidth){
+    const r = Math.min((box.clientWidth - 28) / art.naturalWidth, (box.clientHeight - 28) / art.naturalHeight);
+    art.style.width = Math.floor(art.naturalWidth * r) + "px";
+    art.style.height = Math.floor(art.naturalHeight * r) + "px";
+  }
+}
+art.onload = layout;
+const relayout = () => { layout(); fit(); };
+addEventListener("resize", relayout);
+addEventListener("orientationchange", () => setTimeout(relayout, 300));
 show(location.hash.slice(1) || "tableau");
 </script>
 </body>
