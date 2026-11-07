@@ -8,6 +8,7 @@
 :root{--bg:#14110f;--paper:#e9dfc8;--ink:#2a2118;--red:#b3261e;--muted:#a89f8c}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
+body{height:100dvh}
 body{background:var(--bg);color:var(--paper);font-family:Georgia,"Times New Roman",serif;display:flex;flex-direction:column}
 header{padding:14px 16px 0;text-align:center}
 h1{margin:0;font-size:1.25rem;letter-spacing:.2em;text-transform:uppercase}
@@ -15,8 +16,8 @@ h1 span{color:var(--red);border:2px solid var(--red);padding:0 .4em;margin-right
 nav{display:flex;justify-content:center;gap:6px;padding:12px;flex-wrap:wrap}
 nav button{background:#241e19;color:var(--paper);border:1px solid #4a3f33;border-radius:6px 6px 0 0;padding:9px 16px;font:inherit;cursor:pointer}
 nav button[aria-selected="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
-main{flex:1;min-height:0;padding:0 12px 12px}
-section{display:none;height:100%;background:var(--paper);color:var(--ink);border-radius:6px;position:relative;overflow:hidden}
+main{flex:1;min-height:0;position:relative}
+section{display:none;position:absolute;inset:0 12px 12px;background:var(--paper);color:var(--ink);border-radius:6px;overflow:hidden}
 section.on{display:block}
 .viewport{height:100%;overflow:hidden;touch-action:none;cursor:grab;background:#3b2f25 repeating-linear-gradient(45deg,#3b2f25 0 8px,#362b21 8px 16px)}
 .viewport img{transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none;position:absolute;top:0;left:0}
@@ -35,7 +36,7 @@ iframe{width:100%;height:100%;border:0;background:#fff}
 </style>
 </head>
 <body>
-<header><h1><span>Classé</span>Dossier confidentiel</h1></header>
+<header><h1><span>Classé</span>Dossier confidentiel</h1><div style="font-size:.7rem;color:var(--muted);margin-top:4px">version 3</div></header>
 <nav role="tablist">
   <button role="tab" data-tab="tableau">Tableau d’enquête</button>
   <button role="tab" data-tab="lettre">Lettre de motivation</button>
