@@ -25,8 +25,8 @@ section.on{display:block}
 .tools button:hover,.btn:hover{background:var(--red)}
 iframe{width:100%;height:100%;border:0;background:#fff}
 .bar{position:absolute;top:10px;right:10px;z-index:2}
-.drawing{height:100%;display:grid;place-items:center;padding:12px;background:#2b231c}
-.drawing img{max-width:100%;max-height:100%;border:10px solid var(--paper);box-shadow:0 8px 24px #000a;cursor:zoom-in}
+.drawing{position:absolute;inset:0;padding:14px;background:#2b231c}
+.drawing img{display:block;width:100%;height:100%;object-fit:contain;cursor:zoom-in;filter:drop-shadow(0 8px 20px #000a)}
 .missing{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:var(--ink)}
 .missing code{background:#0002;padding:2px 6px;border-radius:4px}
 #lightbox{position:fixed;inset:0;background:#000e;display:none;place-items:center;z-index:9;cursor:zoom-out}
