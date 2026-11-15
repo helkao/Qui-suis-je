@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dossier confidentiel</title>
+<style>
+:root{--bg:#14110f;--paper:#e9dfc8;--ink:#2a2118;--red:#b3261e;--muted:#a89f8c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{height:var(--app-h,100vh)}
+body{background:var(--bg);color:var(--paper);font-family:Georgia,"Times New Roman",serif;display:flex;flex-direction:column}
+header{padding:14px 16px 0;text-align:center}
+h1{margin:0;font-size:1.25rem;letter-spacing:.2em;text-transform:uppercase}
+h1 span{color:var(--red);border:2px solid var(--red);padding:0 .4em;margin-right:.5em;transform:rotate(-4deg);display:inline-block}
+nav{display:flex;justify-content:center;gap:6px;padding:12px;flex-wrap:wrap}
+nav button{background:#241e19;color:var(--paper);border:1px solid #4a3f33;border-radius:6px 6px 0 0;padding:9px 16px;font:inherit;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+main{flex:1;min-height:0;position:relative}
+section{display:none;position:absolute;top:0;left:12px;right:12px;bottom:12px;background:var(--paper);color:var(--ink);border-radius:6px;overflow:hidden}
+section.on{display:block}
+.viewport{height:100%;overflow:hidden;touch-action:none;cursor:grab;background:#3b2f25 repeating-linear-gradient(45deg,#3b2f25 0 8px,#362b21 8px 16px)}
+.viewport img{transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none;position:absolute;top:0;left:0}
+.tools{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;z-index:2}
+.tools button,.btn{background:var(--ink);color:var(--paper);border:0;border-radius:6px;padding:8px 13px;font:inherit;cursor:pointer;text-decoration:none}
+.tools button:hover,.btn:hover{background:var(--red)}
+#pages{position:absolute;top:0;left:0;right:0;bottom:0;overflow:auto;-webkit-overflow-scrolling:touch;background:#6b6258;padding:12px}
+#pages canvas{display:block;margin:0 auto 12px;background:#fff;box-shadow:0 2px 10px #0006;max-width:100%;height:auto}
+#pages p{color:var(--paper);text-align:center;padding:24px}
+.bar{position:absolute;top:10px;right:10px;z-index:2}
+.drawing{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:14px;background:#2b231c}
+.drawing img{display:block;max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;filter:drop-shadow(0 8px 20px #000a)}
+.missing{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:var(--ink)}
+.missing code{background:#0002;padding:2px 6px;border-radius:4px}
+#lightbox{position:fixed;inset:0;background:#000e;display:none;place-items:center;z-index:9;cursor:zoom-out}
+#lightbox.on{display:grid}
+#lightbox img{max-width:96vw;max-height:96vh}
+</style>
+</head>
+<body>
+<header><h1><span>Classé</span>Dossier confidentiel</h1><div style="font-size:.7rem;color:var(--muted);margin-top:4px">version 5</div></header>
+<nav role="tablist">
+  <button role="tab" data-tab="tableau">Tableau d’enquête</button>
+  <button role="tab" data-tab="lettre">Lettre de motivation</button>
+  <button role="tab" data-tab="dessin">Dessin numérique</button>
+</nav>
+<main>
+  <section id="tableau">
+    <div class="viewport" id="vp"><img id="board" alt="Tableau d’enquête"></div>
+    <div class="tools"><button id="zin" aria-label="Zoom avant">+</button><button id="zout" aria-label="Zoom arrière">−</button><button id="zreset">Recentrer</button></div>
+    <div class="missing"><p>Fichier introuvable.<br>Vérifie le lien <code>tableau</code> en haut du script.</p></div>
+  </section>
+  <section id="lettre">
+    <div class="bar"><a class="btn" id="dl" target="_blank" rel="noopener">Ouvrir / télécharger</a></div>
+    <div id="pages"><p>Chargement de la lettre…</p></div>
+  </section>
+  <section id="dessin">
+    <div class="drawing"><img id="art" alt="Dessin numérique"></div>
+    <div class="missing"><p>Fichier introuvable.<br>Vérifie le lien <code>dessin</code> en haut du script.</p></div>
+  </section>
+</main>
+<div id="lightbox"><img id="big" alt=""></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ✏️ MODIFIE ICI : chemins relatifs dans ton dépôt GitHub, ou liens complets
+const FILES = {
+  tableau: "tableau.png",
+  lettre:  "index.pdf",
+  dessin:  "dessin.png"
+};
+
+// Onglets
+const tabs = [...document.querySelectorAll("nav button")];
+function show(name){
+  if(!FILES[name]) name = "tableau";
+  tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === name));
+  if(location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  layout();
+  if(name === "lettre") loadLetter();
+  if(name === "tableau") fit();
+}
+tabs.forEach(b => b.onclick = () => show(b.dataset.tab));
+addEventListener("hashchange", () => show(location.hash.slice(1)));
+
+// Lettre
+document.getElementById("dl").href = FILES.lettre;
+
+// Dessin + lightbox
+const art = document.getElementById("art");
+art.src = FILES.dessin;
+art.onerror = () => art.closest("section").querySelector(".missing").style.display = "grid";
+art.onclick = () => { document.getElementById("big").src = art.src; document.getElementById("lightbox").classList.add("on"); };
+document.getElementById("lightbox").onclick = e => e.currentTarget.classList.remove("on");
+
+// Tableau : zoom + déplacement
+const vp = document.getElementById("vp"), board = document.getElementById("board");
+let s = 1, x = 0, y = 0, base = 1;
+const apply = () => board.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+function fit(){
+  if(!board.naturalWidth) return;
+  base = Math.min(vp.clientWidth / board.naturalWidth, vp.clientHeight / board.naturalHeight);
+  s = base;
+  x = (vp.clientWidth - board.naturalWidth * s) / 2;
+  y = (vp.clientHeight - board.naturalHeight * s) / 2;
+  apply();
+}
+function zoom(f, cx = vp.clientWidth / 2, cy = vp.clientHeight / 2){
+  const ns = Math.min(Math.max(s * f, base * .5), base * 8);
+  x = cx - (cx - x) * (ns / s);
+  y = cy - (cy - y) * (ns / s);
+  s = ns; apply();
+}
+board.onload = fit;
+board.onerror = () => document.querySelector("#tableau .missing").style.display = "grid";
+board.src = FILES.tableau;
+addEventListener("resize", fit);
+document.getElementById("zin").onclick = () => zoom(1.3);
+document.getElementById("zout").onclick = () => zoom(1 / 1.3);
+document.getElementById("zreset").onclick = fit;
+vp.addEventListener("wheel", e => {
+  e.preventDefault();
+  const r = vp.getBoundingClientRect();
+  zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+
+const pts = new Map(); let lastDist = 0;
+vp.addEventListener("pointerdown", e => { vp.setPointerCapture(e.pointerId); pts.set(e.pointerId, e); vp.style.cursor = "grabbing"; });
+vp.addEventListener("pointermove", e => {
+  if(!pts.has(e.pointerId)) return;
+  const prev = pts.get(e.pointerId); pts.set(e.pointerId, e);
+  if(pts.size === 1){ x += e.clientX - prev.clientX; y += e.clientY - prev.clientY; apply(); }
+  else if(pts.size === 2){
+    const [a, b] = [...pts.values()];
+    const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    if(lastDist){
+      const r = vp.getBoundingClientRect();
+      zoom(d / lastDist, (a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top);
+    }
+    lastDist = d;
+  }
+});
+const up = e => { pts.delete(e.pointerId); lastDist = 0; vp.style.cursor = "grab"; };
+vp.addEventListener("pointerup", up);
+vp.addEventListener("pointercancel", up);
+
+// Mise en page adaptée à tous les écrans (téléphone, tablette, ordinateur)
+function layout(){
+  document.documentElement.style.setProperty("--app-h", innerHeight + "px");
+  const box = art.parentElement;
+  if(box.clientWidth && art.naturalWidth){
+    const r = Math.min((box.clientWidth - 28) / art.naturalWidth, (box.clientHeight - 28) / art.naturalHeight);
+    art.style.width = Math.floor(art.naturalWidth * r) + "px";
+    art.style.height = Math.floor(art.naturalHeight * r) + "px";
+  }
+}
+// Lettre : affichée page par page (fonctionne aussi sur les téléphones qui ne lisent pas les PDF dans la page)
+let letterDone = false;
+async function loadLetter(){
+  if(letterDone) return;
+  letterDone = true;
+  const box = document.getElementById("pages");
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf = await pdfjsLib.getDocument(FILES.lettre).promise;
+    box.innerHTML = "";
+    const w = Math.min(box.clientWidth - 24, 900), dpr = Math.min(devicePixelRatio || 1, 2);
+    for(let n = 1; n <= pdf.numPages; n++){
+      const page = await pdf.getPage(n);
+      const scale = w / page.getViewport({scale: 1}).width;
+      const vp2 = page.getViewport({scale: scale * dpr});
+      const c = document.createElement("canvas");
+      c.width = vp2.width; c.height = vp2.height; c.style.width = w + "px";
+      box.appendChild(c);
+      await page.render({canvasContext: c.getContext("2d"), viewport: vp2}).promise;
+    }
+  }catch(e){
+    box.innerHTML = "<p>La lettre ne peut pas s’afficher ici.<br>Touche « Ouvrir / télécharger » en haut à droite.</p>";
+  }
+}
+art.onload = layout;
+const relayout = () => { layout(); fit(); };
+addEventListener("resize", relayout);
+addEventListener("orientationchange", () => setTimeout(relayout, 300));
+show(location.hash.slice(1) || "tableau");
+</script>
+</body>
+</html>
